@@ -174,6 +174,15 @@ user_input = st.chat_input("Tell me how you're feeling...")
 
 low_information_words = ["hi","hello","hey","ok","okay","yo"]
 
+question_words = [
+    "what should i do",
+    "what can i do",
+    "any advice",
+    "help me",
+    "what now",
+    "what do you suggest"
+]
+
 if user_input:
 
     st.chat_message("user").write(user_input)
@@ -196,43 +205,36 @@ For example:
 """
 
     else:
-       question_words = [
-    "what should i do",
-    "what can i do",
-    "any advice",
-    "help me",
-    "what now",
-    "what do you suggest"
-]
 
-if any(q in text for q in question_words):
+        # If the user asks for advice, use previous emotion context
+        if any(q in text for q in question_words):
 
-    if "last_emotion" in st.session_state:
+            if "last_emotion" in st.session_state:
 
-        emotion = st.session_state.last_emotion
-        prob = st.session_state.last_prob
+                emotion = st.session_state.last_emotion
+                prob = st.session_state.last_prob
 
-        response = generate_response(prob, emotion, mode)
+                response = generate_response(prob, emotion, mode)
 
-        st.chat_message("assistant").write(response)
+                st.chat_message("assistant").write(response)
 
-        st.session_state.messages.append({
-            "role":"assistant",
-            "content":response
-        })
+                st.session_state.messages.append({
+                    "role":"assistant",
+                    "content":response
+                })
 
-        st.stop()
+                st.stop()
 
-        # ML prediction
+        # Otherwise run ML prediction
         vector = vectorizer.transform([user_input])
         prob = model.predict_proba(vector)[0][1]
 
-        # Emotion detection
         emotion = detect_emotion(user_input)
+
+        # Save context
         st.session_state.last_emotion = emotion
         st.session_state.last_prob = prob
 
-        # Generate response
         response = generate_response(prob, emotion, mode)
 
     st.chat_message("assistant").write(response)
