@@ -27,12 +27,18 @@ vectorizer = joblib.load("model/vectorizer.pkl")
 
 st.markdown("""
 <style>
+
 body {
-background-color:#FAF7F2;
+background: linear-gradient(135deg,#F6F8F7,#EAF3EE);
+}
+
+[data-testid="stSidebar"] {
+background-color:#F1F5F3;
 }
 
 .block-container {
 padding-top:2rem;
+max-width:900px;
 }
 
 </style>
@@ -65,6 +71,24 @@ if st.sidebar.button("Clear Conversation"):
     st.session_state.emotion_history = []
     st.rerun()
 
+
+
+# -----------------------------
+# DAILY AFFIRMATION
+# -----------------------------
+
+affirmations = [
+
+"You deserve patience today.",
+"Small steps still matter.",
+"It's okay to take things slowly.",
+"Your feelings are valid.",
+"You are stronger than you think."
+
+]
+
+st.sidebar.markdown("### 🌱 Small Reminder")
+st.sidebar.write(random.choice(affirmations))
 # -----------------------------
 # SESSION STATE
 # -----------------------------
@@ -268,34 +292,62 @@ If you'd like, you can share more about what's on your mind.
 """
 
 # -----------------------------
-# MOOD GRAPH
+# EMOTIONAL WEATHER
 # -----------------------------
 
-st.sidebar.markdown("### Mood Graph")
+st.sidebar.markdown("### 🌤 Emotional Weather")
+
+if st.session_state.emotion_history:
+
+    current_emotion = st.session_state.emotion_history[-1]
+
+    emotion_labels = {
+        "loneliness":"Feeling Lonely",
+        "sadness":"Feeling Low",
+        "stress":"Feeling Stressed",
+        "anxiety":"Feeling Anxious",
+        "social":"Social Pressure",
+        "selfworth":"Self Doubt",
+        "general":"Neutral"
+    }
+
+    st.sidebar.write(emotion_labels.get(current_emotion))
+
+else:
+    st.sidebar.write("No signals yet")
+
+# -----------------------------
+# MOOD JOURNEY
+# -----------------------------
+
+st.sidebar.markdown("### 📈 Mood Journey")
 
 if st.session_state.emotion_history:
 
     mood_map = {
-        "loneliness":4,
-        "sadness":5,
-        "stress":4,
-        "anxiety":5,
+        "loneliness":2,
+        "sadness":2,
+        "stress":3,
+        "anxiety":3,
         "social":3,
-        "selfworth":4,
-        "general":2
+        "selfworth":2,
+        "general":4
     }
 
-    values = [mood_map.get(e,2) for e in st.session_state.emotion_history]
+    values = [mood_map.get(e,3) for e in st.session_state.emotion_history]
 
-    df = pd.DataFrame(values, columns=["Mood Level"])
+    df = pd.DataFrame(values, columns=["Mood"])
 
     st.sidebar.line_chart(df)
 
+
 # -----------------------------
-# BREATHING EXERCISE
+# CALM TOOLS
 # -----------------------------
 
-if st.sidebar.button("🌬 Calm Breathing Exercise"):
+st.sidebar.markdown("### 🫁 Calm Tools")
+
+if st.sidebar.button("Guided Breathing"):
 
     st.sidebar.write("Follow the breathing guide:")
 
