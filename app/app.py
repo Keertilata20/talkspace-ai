@@ -251,7 +251,13 @@ closing_words = [
     "nah it's okay",
     "thats fine",
     "that's fine",
-    "bye"
+    "bye",
+"goodbye",
+"see you",
+"thanks",
+"thank you",
+"talk later"
+
 ]
 
 
@@ -266,8 +272,15 @@ if user_input:
 
     text = user_input.lower().strip()
 
-    if len(text.split()) < 3 or text in low_information_words:
-
+    # Detect conversation closing FIRST
+    if any(c in text for c in closing_words):
+        response = random.choice([
+        "That's completely okay. I'm here whenever you feel like talking again.",
+        "No worries at all. Take care of yourself.",
+        "That's alright. I'm here anytime you want to talk.",
+        "Totally okay. Take it easy today."])
+    # Then check short messages
+    elif len(text.split()) < 3 or text in low_information_words:
         response = """Could you tell me a bit more about how you're feeling?
 
 Example:
