@@ -209,7 +209,17 @@ closing_words = [
 "not now",
 "later maybe",
 "thats enough",
-"that's enough"
+"that's enough",
+"im done",
+"i'm done",
+"done for now",
+"its okay for now",
+"it's okay for now",
+"nah its okay",
+"nah it's okay",
+"thats fine",
+"that's fine"
+
 ]
 
 
@@ -236,7 +246,7 @@ Example:
     else:
 
         # Detect conversation closing
-        if any(c in text for c in closing_words):
+        if any(c in text for c in closing_words) or "done" in text:
 
             response = random.choice([
                 "That's completely okay. I'm here whenever you feel like talking again.",
