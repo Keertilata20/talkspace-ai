@@ -218,8 +218,8 @@ if user_input:
     st.chat_message("user").write(user_input)
 
     st.session_state.messages.append({
-        "role":"user",
-        "content":user_input
+        "role": "user",
+        "content": user_input
     })
 
     text = user_input.lower().strip()
@@ -227,51 +227,63 @@ if user_input:
     if len(text.split()) < 3 or text in low_information_words:
 
         response = """Could you tell me a bit more about how you're feeling?
-        Example:
-        • "I feel really tired and unmotivated lately"
-        • "I feel lonely and disconnected from people"""
 
-else:
-
-    # Detect conversation closing
-    if any(c in text for c in closing_words):
-
-        response = random.choice([
-            "That's completely okay. I'm here whenever you feel like talking again.",
-            "No worries at all. Take care of yourself.",
-            "That's alright. I'm here anytime you want to talk.",
-            "Totally okay. Take it easy today."
-        ])
-
-    # Advice follow-up using previous context
-    elif any(q in text for q in question_words):
-
-        if "last_emotion" in st.session_state:
-
-            emotion = st.session_state.last_emotion
-            prob = st.session_state.last_prob
-
-            response = generate_response(prob, emotion, mode)
-
-            st.chat_message("assistant").write(response)
-
-            st.session_state.messages.append({
-                "role":"assistant",
-                "content":response
-            })
-
-            st.stop()
+Example:
+• "I feel really tired and unmotivated lately"
+• "I feel lonely and disconnected from people"
+"""
 
     else:
 
-        # ML prediction
-        vector = vectorizer.transform([user_input])
-        prob = model.predict_proba(vector)[0][1]
+        # Detect conversation closing
+        if any(c in text for c in closing_words):
 
-        emotion = detect_emotion(user_input)
+            response = random.choice([
+                "That's completely okay. I'm here whenever you feel like talking again.",
+                "No worries at all. Take care of yourself.",
+                "That's alright. I'm here anytime you want to talk.",
+                "Totally okay. Take it easy today."
+            ])
 
-        # Save conversation context
-        st.session_state.last_emotion = emotion
-        st.session_state.last_prob = prob
+        # Advice follow-up using previous context
+        elif any(q in text for q in question_words):
 
-        response = generate_response(prob, emotion, mode)
+            if "last_emotion" in st.session_state:
+
+                emotion = st.session_state.last_emotion
+                prob = st.session_state.last_prob
+
+                response = generate_response(prob, emotion, mode)
+
+                st.chat_message("assistant").write(response)
+
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": response
+                })
+
+                st.stop()
+
+            else:
+                response = "Could you tell me a bit more about what's been going on?"
+
+        else:
+
+            # ML prediction
+            vector = vectorizer.transform([user_input])
+            prob = model.predict_proba(vector)[0][1]
+
+            emotion = detect_emotion(user_input)
+
+            # Save conversation context
+            st.session_state.last_emotion = emotion
+            st.session_state.last_prob = prob
+
+            response = generate_response(prob, emotion, mode)
+
+    st.chat_message("assistant").write(response)
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response
+    })
