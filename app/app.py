@@ -119,10 +119,15 @@ Sometimes even small things can help shift the feeling a little.
         else:
 
             light_lines = [
-                "I'm glad you checked in with yourself.",
-                "It's good that you're talking about how you feel.",
-                "Sometimes just saying things out loud can help."
-            ]
+                "I'm glad you shared that.",
+"It's good that you're talking about how you feel.",
+"Sometimes just saying things out loud can help.",
+"I'm here to listen.",
+"Thanks for trusting me with that.",
+"It's okay to take things slowly.",
+"I'm glad you checked in with yourself."
+]
+
 
             return f"""
 {random.choice(light_lines)}
@@ -196,6 +201,16 @@ question_words = [
     "what now",
     "what do you suggest"
 ]
+closing_words = [
+"no thanks",
+"no thank you",
+"im good",
+"i'm good",
+"not now",
+"later maybe",
+"thats enough",
+"that's enough"
+]
 
 
 if user_input:
@@ -211,34 +226,43 @@ if user_input:
 
     if len(text.split()) < 3 or text in low_information_words:
 
-        response = """
-Could you tell me a bit more about how you're feeling?
+        response = """Could you tell me a bit more about how you're feeling?
+        Example:
+        • "I feel really tired and unmotivated lately"
+        • "I feel lonely and disconnected from people"""
 
-Example:
-• "I feel really tired and unmotivated lately"
-• "I feel lonely and disconnected from people"
-"""
+else:
+
+    # Detect conversation closing
+    if any(c in text for c in closing_words):
+
+        response = random.choice([
+            "That's completely okay. I'm here whenever you feel like talking again.",
+            "No worries at all. Take care of yourself.",
+            "That's alright. I'm here anytime you want to talk.",
+            "Totally okay. Take it easy today."
+        ])
+
+    # Advice follow-up using previous context
+    elif any(q in text for q in question_words):
+
+        if "last_emotion" in st.session_state:
+
+            emotion = st.session_state.last_emotion
+            prob = st.session_state.last_prob
+
+            response = generate_response(prob, emotion, mode)
+
+            st.chat_message("assistant").write(response)
+
+            st.session_state.messages.append({
+                "role":"assistant",
+                "content":response
+            })
+
+            st.stop()
 
     else:
-
-        # Advice follow-up using previous context
-        if any(q in text for q in question_words):
-
-            if "last_emotion" in st.session_state:
-
-                emotion = st.session_state.last_emotion
-                prob = st.session_state.last_prob
-
-                response = generate_response(prob, emotion, mode)
-
-                st.chat_message("assistant").write(response)
-
-                st.session_state.messages.append({
-                    "role":"assistant",
-                    "content":response
-                })
-
-                st.stop()
 
         # ML prediction
         vector = vectorizer.transform([user_input])
@@ -251,10 +275,3 @@ Example:
         st.session_state.last_prob = prob
 
         response = generate_response(prob, emotion, mode)
-
-    st.chat_message("assistant").write(response)
-
-    st.session_state.messages.append({
-        "role":"assistant",
-        "content":response
-    })
