@@ -1,5 +1,6 @@
 import streamlit as st
 import joblib
+import random
 
 # load model
 model = joblib.load("model/depression_model.pkl")
@@ -16,6 +17,86 @@ Talk about how you're feeling and the AI will analyze emotional signals.
 ⚠️ This tool is **not a medical diagnosis**.
 """
 )
+
+# supportive response generator
+def generate_response(prob, words):
+
+    if prob > 0.75:
+        responses = [
+            "I'm really glad you shared that. It sounds like you're going through a very heavy time.",
+            "Thank you for opening up. What you're describing sounds really difficult.",
+            "It seems like things might feel overwhelming right now."
+        ]
+
+        advice = [
+            "You might consider talking to someone you trust or a mental health professional.",
+            "You deserve support. Reaching out to a friend, family member, or counselor could help.",
+            "Remember that difficult moments don't define your whole story."
+        ]
+
+        return f"""
+⚠️ **Strong emotional distress signals detected**
+
+{random.choice(responses)}
+
+Confidence: {prob*100:.2f}%
+
+Key emotional indicators:
+{words}
+
+{random.choice(advice)}
+
+You are not alone ❤️
+"""
+
+    elif prob > 0.40:
+
+        responses = [
+            "I notice some emotional stress in what you're sharing.",
+            "It sounds like you might be dealing with some difficult feelings.",
+            "Thanks for being open about how you're feeling."
+        ]
+
+        advice = [
+            "Taking a short walk, journaling, or talking to someone supportive might help.",
+            "Sometimes sharing feelings with someone close can make things lighter.",
+            "Try to take things one step at a time."
+        ]
+
+        return f"""
+💬 **Some emotional distress signals detected**
+
+{random.choice(responses)}
+
+Confidence: {prob*100:.2f}%
+
+Key emotional indicators:
+{words}
+
+{random.choice(advice)}
+"""
+
+    else:
+
+        responses = [
+            "Thanks for sharing how you're feeling.",
+            "I'm glad you took a moment to reflect on your emotions.",
+            "It's good to check in with yourself emotionally."
+        ]
+
+        return f"""
+✅ **No strong depression signals detected**
+
+{random.choice(responses)}
+
+Confidence: {prob*100:.2f}%
+
+Key emotional indicators:
+{words}
+
+Your feelings still matter. Take care of yourself.
+"""
+
 
 # store chat history
 if "messages" not in st.session_state:
@@ -56,33 +137,23 @@ Example:
         vector = vectorizer.transform([user_input])
         prob = model.predict_proba(vector)[0][1]
 
-        if prob > 0.65:
-            response = f"""
-⚠️ I detect strong signs of emotional distress.
+        # Explainable AI: find important words
+        feature_names = vectorizer.get_feature_names_out()
+        vector_array = vector.toarray()[0]
 
-Confidence: {prob*100:.2f}%
+        important_words = []
 
-If you're struggling, consider talking to someone you trust or a professional.
-You are not alone ❤️
-"""
+        for i, value in enumerate(vector_array):
+            if value > 0:
+                important_words.append((feature_names[i], value))
 
-        elif prob > 0.40:
-            response = f"""
-I detect some emotional distress signals.
+        important_words = sorted(important_words, key=lambda x: x[1], reverse=True)
 
-Confidence: {prob*100:.2f}%
+        top_words = [word for word, score in important_words[:3]]
 
-Take care of yourself and consider reaching out to someone supportive.
-"""
+        word_display = "\n".join([f"• {w}" for w in top_words]) if top_words else "• emotional signals detected"
 
-        else:
-            response = f"""
-I don't detect strong depression signals.
-
-Confidence: {prob*100:.2f}%
-
-But your feelings still matter. Take care of yourself.
-"""
+        response = generate_response(prob, word_display)
 
     st.chat_message("assistant").write(response)
 
