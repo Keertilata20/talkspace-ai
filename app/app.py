@@ -8,6 +8,19 @@ vectorizer = joblib.load("model/vectorizer.pkl")
 
 st.set_page_config(page_title="Mental Health AI", page_icon="🧠")
 
+# UI Styling
+st.markdown("""
+<style>
+.stChatMessage {
+    padding: 12px;
+    border-radius: 12px;
+}
+[data-testid="stChatInput"] {
+    border-radius: 12px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🧠 Mental Health AI Assistant")
 
 st.write(
@@ -18,11 +31,15 @@ Talk about how you're feeling and the AI will listen and offer support.
 """
 )
 
-# Assistant personality selector
+# Sidebar
 mode = st.sidebar.selectbox(
     "Assistant Style",
     ["Supportive Friend", "Counselor"]
 )
+
+if st.sidebar.button("Clear Conversation"):
+    st.session_state.messages = []
+    st.rerun()
 
 # Emotion keywords
 emotion_keywords = {
@@ -58,7 +75,7 @@ def coping_suggestions():
     return "\n".join([f"• {c}" for c in chosen])
 
 
-# Friend reaction pools
+# Friend responses
 friend_reactions = [
     "Yeah, that sounds really frustrating.",
     "That must feel really heavy to deal with.",
@@ -120,14 +137,12 @@ Sometimes even small things can help shift the feeling a little.
 
             light_lines = [
                 "I'm glad you shared that.",
-"It's good that you're talking about how you feel.",
-"Sometimes just saying things out loud can help.",
-"I'm here to listen.",
-"Thanks for trusting me with that.",
-"It's okay to take things slowly.",
-"I'm glad you checked in with yourself."
-]
-
+                "It's good that you're talking about how you feel.",
+                "Sometimes just saying things out loud can help.",
+                "I'm here to listen.",
+                "Thanks for trusting me with that.",
+                "It's okay to take things slowly."
+            ]
 
             return f"""
 {random.choice(light_lines)}
@@ -183,13 +198,29 @@ If you'd like, you can tell me more about what's been on your mind.
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Show previous messages
+
+# Welcome message
+if len(st.session_state.messages) == 0:
+    st.info("""
+You can talk about anything that's on your mind.
+
+Examples:
+• "I feel really lonely lately"
+• "I'm overwhelmed with work"
+• "I feel like nobody understands me"
+
+This space is here for you.
+""")
+
+
+# Display previous messages
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 
 # User input
 user_input = st.chat_input("Tell me how you're feeling...")
+
 
 low_information_words = ["hi","hello","hey","ok","okay","yo"]
 
@@ -201,25 +232,26 @@ question_words = [
     "what now",
     "what do you suggest"
 ]
-closing_words = [
-"no thanks",
-"no thank you",
-"im good",
-"i'm good",
-"not now",
-"later maybe",
-"thats enough",
-"that's enough",
-"im done",
-"i'm done",
-"done for now",
-"its okay for now",
-"it's okay for now",
-"nah its okay",
-"nah it's okay",
-"thats fine",
-"that's fine"
 
+closing_words = [
+    "no thanks",
+    "no thank you",
+    "im good",
+    "i'm good",
+    "not now",
+    "later maybe",
+    "thats enough",
+    "that's enough",
+    "im done",
+    "i'm done",
+    "done for now",
+    "its okay for now",
+    "it's okay for now",
+    "nah its okay",
+    "nah it's okay",
+    "thats fine",
+    "that's fine",
+    "bye"
 ]
 
 
@@ -243,53 +275,38 @@ Example:
 • "I feel lonely and disconnected from people"
 """
 
-    else:
+    elif any(c in text for c in closing_words) or "done" in text:
 
-        # Detect conversation closing
-        if any(c in text for c in closing_words) or "done" in text:
+        response = random.choice([
+            "That's completely okay. I'm here whenever you feel like talking again.",
+            "No worries at all. Take care of yourself.",
+            "That's alright. I'm here anytime you want to talk.",
+            "Totally okay. Take it easy today."
+        ])
 
-            response = random.choice([
-                "That's completely okay. I'm here whenever you feel like talking again.",
-                "No worries at all. Take care of yourself.",
-                "That's alright. I'm here anytime you want to talk.",
-                "Totally okay. Take it easy today."
-            ])
+    elif any(q in text for q in question_words):
 
-        # Advice follow-up using previous context
-        elif any(q in text for q in question_words):
+        if "last_emotion" in st.session_state:
 
-            if "last_emotion" in st.session_state:
-
-                emotion = st.session_state.last_emotion
-                prob = st.session_state.last_prob
-
-                response = generate_response(prob, emotion, mode)
-
-                st.chat_message("assistant").write(response)
-
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": response
-                })
-
-                st.stop()
-
-            else:
-                response = "Could you tell me a bit more about what's been going on?"
-
-        else:
-
-            # ML prediction
-            vector = vectorizer.transform([user_input])
-            prob = model.predict_proba(vector)[0][1]
-
-            emotion = detect_emotion(user_input)
-
-            # Save conversation context
-            st.session_state.last_emotion = emotion
-            st.session_state.last_prob = prob
+            emotion = st.session_state.last_emotion
+            prob = st.session_state.last_prob
 
             response = generate_response(prob, emotion, mode)
+
+        else:
+            response = "Could you tell me a bit more about what's been going on?"
+
+    else:
+
+        vector = vectorizer.transform([user_input])
+        prob = model.predict_proba(vector)[0][1]
+
+        emotion = detect_emotion(user_input)
+
+        st.session_state.last_emotion = emotion
+        st.session_state.last_prob = prob
+
+        response = generate_response(prob, emotion, mode)
 
     st.chat_message("assistant").write(response)
 
