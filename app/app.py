@@ -196,6 +196,32 @@ For example:
 """
 
     else:
+       question_words = [
+    "what should i do",
+    "what can i do",
+    "any advice",
+    "help me",
+    "what now",
+    "what do you suggest"
+]
+
+if any(q in text for q in question_words):
+
+    if "last_emotion" in st.session_state:
+
+        emotion = st.session_state.last_emotion
+        prob = st.session_state.last_prob
+
+        response = generate_response(prob, emotion, mode)
+
+        st.chat_message("assistant").write(response)
+
+        st.session_state.messages.append({
+            "role":"assistant",
+            "content":response
+        })
+
+        st.stop()
 
         # ML prediction
         vector = vectorizer.transform([user_input])
@@ -203,6 +229,8 @@ For example:
 
         # Emotion detection
         emotion = detect_emotion(user_input)
+        st.session_state.last_emotion = emotion
+        st.session_state.last_prob = prob
 
         # Generate response
         response = generate_response(prob, emotion, mode)
