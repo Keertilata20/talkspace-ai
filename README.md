@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="screenshots/banner.png" width="100%">
+</p>
+<p align="center">
   <img src="https://readme-typing-svg.herokuapp.com?font=Inter&weight=600&size=30&duration=3500&pause=1000&color=4F8F7F&center=true&vCenter=true&width=600&lines=TalkSpace+🌿;A+calm+AI+conversation+space;Your+companion+Nira+is+here+to+listen" alt="Typing SVG" />
 </p>
 
