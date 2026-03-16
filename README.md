@@ -217,11 +217,11 @@ Small affirmations appear in the sidebar to create a **supportive and calm envir
 
 # ⚙️ Tech Stack
 
-Python
-Streamlit
-Scikit-learn
-Pandas
-Joblib
+* Python
+* Streamlit
+* Scikit-learn
+* Pandas
+* Joblib
 
 A trained machine learning model estimates emotional intensity and guides conversation responses.
 
