@@ -210,17 +210,8 @@ TalkSpace includes simple grounding tools such as:
 
 Small affirmations appear in the sidebar to create a **supportive and calm environment**.
 
----
 
-# 🖥 Interface Preview
 
-<p align="center">
-  <img src="screenshots/chat.png" width="800">
-</p>
-
-<p align="center">
-  Calm conversation interface with Nira.
-</p>
 
 ---
 
