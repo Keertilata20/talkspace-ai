@@ -2,14 +2,12 @@
   <img src="screenshots/talkspace-ai-banner.png" width="100%" />
 </p>
 
-
-
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Inter&weight=600&size=30&duration=3500&pause=1000&color=4F8F7F&center=true&vCenter=true&width=600&lines=TalkSpace+🌿;A+calm+AI+conversation+space;Your+companion+Nira+is+here+to+listen" alt="Typing SVG" />
+ <img src="https://readme-typing-svg.herokuapp.com?font=Inter&weight=500&size=28&duration=3500&pause=1000&color=4F8F7F&center=true&vCenter=true&width=600&lines=Hey%2C+I%E2%80%99m+Nira+%F0%9F%8C%BF;I%E2%80%99m+here+to+listen;You+can+talk+about+anything;No+pressure%2C+just+talk" />
 </p>
 
 <p align="center">
-  A quiet digital space where people can share what’s on their mind.
+  A calm digital space where thoughts feel safe to be shared.
 </p>
 
 <p align="center">
