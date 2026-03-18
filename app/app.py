@@ -112,6 +112,8 @@ crisis_words = [
 "suicide",
 "end my life",
 "i can't live anymore",
+"i can't do it anymore",
+"i hate myself",
 "i dont want to live",
 "life is pointless"
 ]
@@ -409,7 +411,7 @@ for msg in st.session_state.messages:
 user_input = st.chat_input("Share what's on your mind...")
 
 greetings = ["hi","hello","hey","yo"]
-closings = ["bye","thanks","thank you","im done","i'm done","bye for now"]
+closings = ["bye","thanks","thank you","im done","i'm done","bye for now","bye bye", "later","thank you for now","i should leave"]
 
 if user_input:
 
