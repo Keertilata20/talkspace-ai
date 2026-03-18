@@ -28,11 +28,13 @@ https://mental-health-analyser-ai.streamlit.app/
 
 <p align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge\&logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-App-red?style=for-the-badge\&logo=streamlit)
-![Machine Learning](https://img.shields.io/badge/AI-Conversational-green?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-red?style=for-the-badge&logo=streamlit)
+![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-ML-orange?style=for-the-badge&logo=scikitlearn)
+![NLP](https://img.shields.io/badge/NLP-Text%20Analysis-green?style=for-the-badge)
+![TF-IDF](https://img.shields.io/badge/Vectorizer-TF--IDF-purple?style=for-the-badge)
+![Logistic Regression](https://img.shields.io/badge/Model-Logistic%20Regression-yellow?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
-
 </p>
 
 ---
