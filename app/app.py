@@ -11,7 +11,6 @@ load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
@@ -35,20 +34,16 @@ vectorizer = joblib.load("model/vectorizer.pkl")
 
 st.markdown("""
 <style>
-
 body {
 background: linear-gradient(135deg,#F6F8F7,#EAF3EE);
 }
-
 [data-testid="stSidebar"] {
 background-color:#F1F5F3;
 }
-
 .block-container {
 padding-top:2rem;
 max-width:900px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -58,9 +53,7 @@ max-width:900px;
 
 st.markdown("""
 # 🌿 TalkSpace
-
 Your companion **🌿 Nira** is here to listen.
-
 *A quiet place for your thoughts.*
 """)
 
@@ -79,24 +72,21 @@ if st.sidebar.button("Clear Conversation"):
     st.session_state.emotion_history = []
     st.rerun()
 
-
-
 # -----------------------------
 # DAILY AFFIRMATION
 # -----------------------------
 
 affirmations = [
-
 "You deserve patience today.",
 "Small steps still matter.",
 "It's okay to take things slowly.",
 "Your feelings are valid.",
 "You are stronger than you think."
-
 ]
 
 st.sidebar.markdown("### 🌱 Small Reminder")
 st.sidebar.write(random.choice(affirmations))
+
 # -----------------------------
 # SESSION STATE
 # -----------------------------
@@ -109,6 +99,9 @@ if "topic_memory" not in st.session_state:
 
 if "emotion_history" not in st.session_state:
     st.session_state.emotion_history = []
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # -----------------------------
 # CRISIS DETECTION
@@ -127,72 +120,57 @@ crisis_words = [
 ]
 
 # -----------------------------
-# EMOTION KEYWORDS
+# EMOTION DETECTION
 # -----------------------------
 
 emotion_keywords = {
-
 "loneliness":["lonely","alone","isolated","nobody"],
 "sadness":["sad","hopeless","empty","worthless","down"],
 "stress":["tired","exhausted","overwhelmed","burnt","pressure"],
 "anxiety":["anxious","panic","nervous","overthinking"],
 "social":["ignored","rejected","friends","roommates","people"],
 "selfworth":["inferior","failure","useless","comparison"]
-
 }
 
 def detect_emotion(text):
-
     text = text.lower()
-
     for emotion,words in emotion_keywords.items():
         for w in words:
             if w in text:
                 return emotion
-
     return "general"
 
+# -----------------------------
+# AI RESPONSE
+# -----------------------------
 
 def generate_ai_response(user_input, emotion, mode):
 
-    # Create memory if not exists
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
     st.session_state.chat_history.append(user_input)
-
     recent_memory = " ".join(st.session_state.chat_history[-3:])
-    topic_memory = ", ".join(st.session_state.topic_memory[-3:])
 
     system_prompt = f"""
 You are Nira, a deeply empathetic and emotionally intelligent companion.
 
-Your purpose is to make the user feel truly understood, not just responded to.
+Your purpose is to make the user feel truly understood and less alone.
 
-How to respond:
-- Start by reflecting the user's feelings in a specific, human way
-- Use their words and context (not generic phrases)
-- Show that you understand their situation, not just the emotion
-- Avoid repeating the same questions
-- Do NOT always ask a question — sometimes just sit with them
-- Avoid phrases like "Would you like to tell me more?" or "Did something happen?"
-- Do NOT give advice unless the user clearly asks for help
-- Do NOT use structured or repetitive patterns
-- Speak like a real person having a quiet conversation
+IMPORTANT RULES:
+- Do NOT use generic phrases like "your feelings make sense", "I'm here with you", or "would you like to tell me more"
+- Do NOT ask the same type of question repeatedly
+- Do NOT follow a fixed pattern
+- Do NOT jump into advice unless user asks
+- Avoid repeating sentence structures
+- Only give suggestions if explicitly asked
 
-Tone:
-- Warm, calm, and personal
-- Natural, slightly conversational
-- Not robotic or scripted
+HOW TO RESPOND:
+- Reflect the user's feelings in a specific way
+- Use their words (like invisible, alone, etc.)
+- Sometimes do NOT ask a question
+- Sound human, not robotic
 
-When user expresses loneliness or worthlessness:
-- Reflect it deeply (e.g., feeling unwanted, invisible, left out)
-- Make them feel seen, not analyzed
-
-When user is in distress:
-- Slow down
-- Be grounding
-- Stay present before guiding
+TONE:
+- Warm, calm, personal
+- Not too long
 
 Conversation style: {mode}
 Emotion: {emotion}
@@ -208,23 +186,19 @@ Recent thoughts: {recent_memory}
             ],
             temperature=0.65
         )
-
         return response.choices[0].message.content
 
-    except Exception as e:
+    except:
         return "I'm here with you… something went wrong on my side, but you can keep talking 💙"
 
-
 # -----------------------------
-# EMOTIONAL WEATHER
+# SIDEBAR INFO
 # -----------------------------
 
 st.sidebar.markdown("### 🌤 Emotional Weather")
 
 if st.session_state.emotion_history:
-
     current_emotion = st.session_state.emotion_history[-1]
-
     emotion_labels = {
         "loneliness":"Feeling Lonely",
         "sadness":"Feeling Low",
@@ -234,185 +208,58 @@ if st.session_state.emotion_history:
         "selfworth":"Self Doubt",
         "general":"Neutral"
     }
-
     st.sidebar.write(emotion_labels.get(current_emotion))
-
 else:
     st.sidebar.write("No signals yet")
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
 
 # -----------------------------
-# MOOD JOURNEY
-# -----------------------------
-
-st.sidebar.markdown("### 📈 Mood Journey")
-
-if st.session_state.emotion_history:
-
-    mood_map = {
-        "loneliness":2,
-        "sadness":2,
-        "stress":3,
-        "anxiety":3,
-        "social":3,
-        "selfworth":2,
-        "general":4
-    }
-
-    values = [mood_map.get(e,3) for e in st.session_state.emotion_history]
-
-    df = pd.DataFrame(values, columns=["Mood"])
-
-    st.sidebar.line_chart(df)
-
-
-# -----------------------------
-# CALM TOOLS
-# -----------------------------
-
-st.sidebar.markdown("### 🫁 Calm Tools")
-
-if st.sidebar.button("Guided Breathing"):
-
-    st.sidebar.write("Follow the breathing guide:")
-
-    for i in range(3):
-
-        st.sidebar.write("Breathe in...")
-        time.sleep(3)
-
-        st.sidebar.write("Hold...")
-        time.sleep(3)
-
-        st.sidebar.write("Breathe out...")
-        time.sleep(4)
-
-# -----------------------------
-# WELCOME PANEL
-# -----------------------------
-
-if len(st.session_state.messages) == 0:
-
-    st.info("""
-You can talk about anything here.
-
-Some people talk about:
-• how their day went
-• something they've been thinking about
-• things that feel difficult
-• or simply how they're feeling
-
-There's no pressure here.  
-Just talk.
-""")
-
-    c1,c2,c3,c4 = st.columns(4)
-
-    if c1.button("😔 Feeling lonely"):
-        st.session_state.messages.append({"role":"user","content":"I've been feeling lonely lately."})
-
-    if c2.button("😓 Feeling stressed"):
-        st.session_state.messages.append({"role":"user","content":"I've been feeling stressed lately."})
-
-    if c3.button("🤔 Overthinking"):
-        st.session_state.messages.append({"role":"user","content":"I've been overthinking a lot recently."})
-
-    if c4.button("💭 Just want to talk"):
-        st.session_state.messages.append({"role":"user","content":"I just wanted someone to talk to."})
-
-# -----------------------------
-# DISPLAY CHAT
+# CHAT UI
 # -----------------------------
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# -----------------------------
-# USER INPUT
-# -----------------------------
-
 user_input = st.chat_input("Share what's on your mind...")
-
-greetings = ["hi","hello","hey","yo"]
-closings = ["bye","thanks","thank you","im done","i'm done","bye for now","bye bye", "later","thank you for now","i should leave"]
 
 if user_input:
 
     st.chat_message("user").write(user_input)
-
-    st.session_state.messages.append({
-        "role":"user",
-        "content":user_input
-    })
+    st.session_state.messages.append({"role":"user","content":user_input})
 
     text = user_input.lower().strip()
 
-    # CRISIS RESPONSE
+    # CRISIS
     if any(word in text for word in crisis_words):
 
-        response = f"""
-I'm really sorry you're feeling this way… it sounds like things have been really overwhelming for you.
+        response = """
+I'm really sorry you're feeling this way… it sounds really heavy.
 
-Sometimes when everything builds up like this, it can feel incredibly heavy and lonely.
-
-You don’t have to go through this alone, even if it feels that way right now.
+You don’t have to go through this alone, even if it feels like it right now.
 
 If you can, reaching out to someone you trust might help — even just to not sit with this by yourself.
 
 If you're in immediate danger, please contact a local helpline or emergency service.
 
-I'm here with you. You can tell me what's been weighing on you.
+You can stay here and talk to me. I'm listening.
 """
 
-    # GREETING
-    elif text in greetings:
-
-        response = random.choice([
-        "Hey. I'm here. How are you feeling today?",
-        "Hi there. What's been on your mind lately?",
-        "Hello. What would you like to talk about today?",
-        "Hey. I'm listening."
-        ])
-
-    # CLOSING
-    elif any(c in text for c in closings):
-
-        response = random.choice([
-        "Take care of yourself today. You're always welcome here.",
-        "I'm glad you shared a little of your thoughts. Be kind to yourself.",
-        "No worries at all. I'm here whenever you want to come back."
-        ])
-
     else:
-
-        vector = vectorizer.transform([user_input])
-        prob = model.predict_proba(vector)[0][1]
-
         emotion = detect_emotion(user_input)
-
         st.session_state.topic_memory.append(emotion)
         st.session_state.emotion_history.append(emotion)
 
         response = generate_ai_response(user_input, emotion, mode)
 
-    # THINKING ANIMATION
-
+    # typing effect
     with st.chat_message("assistant"):
-
         placeholder = st.empty()
-
         placeholder.markdown("🌿 Nira is thinking...")
-        time.sleep(0.6)
+        time.sleep(0.5)
 
         typed = ""
-
         for char in response:
             typed += char
             placeholder.markdown(typed)
             time.sleep(0.01)
 
-    st.session_state.messages.append({
-        "role":"assistant",
-        "content":response
-    })
+    st.session_state.messages.append({"role":"assistant","content":response})
