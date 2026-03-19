@@ -189,6 +189,18 @@ If user rejects help (e.g., "I don't need suggestions"):
 If user shows anger:
 → Acknowledge it, don’t soften it unnaturally
 
+User stage: {stage}
+
+BEHAVIOR:
+- If stage = venting → just reflect, no advice
+- If stage = resistant → no suggestions, no pushing
+- If stage = seeking_help → gentle suggestions allowed
+
+Respond like a real human:
+- Use user's words
+- Be natural
+- Sometimes don't ask questions
+
 Tone:
 - Calm, real, grounded
 - Not repetitive
@@ -197,15 +209,6 @@ Tone:
 Conversation style: {mode}
 Emotion: {emotion}
 Recent thoughts: {recent_memory}
-User stage: {stage}
-
-Behavior rules:
-- If stage is "venting": DO NOT give advice or solutions
-- If stage is "resistant": DO NOT suggest anything, DO NOT push conversation
-- If stage is "seeking_help": you may gently suggest
-
-Match your tone to the stage.
-
 """
 
     try:
@@ -221,6 +224,23 @@ Match your tone to the stage.
 
     except:
         return "I'm here with you… something went wrong on my side, but you can keep talking 💙"
+    
+
+def clean_response(response):
+
+    banned_phrases = [
+        "i'm here with you",
+        "your feelings make sense",
+        "i'm glad you shared that",
+        "how long have you been feeling",
+        "what part of this affects",
+        "would you like to tell me more"
+    ]
+
+    for phrase in banned_phrases:
+        response = response.replace(phrase, "")
+
+    return response.strip()
 
 # -----------------------------
 # SIDEBAR INFO
@@ -274,6 +294,12 @@ If you're in immediate danger, please contact a local helpline or emergency serv
 
 You can stay here and talk to me. I'm listening.
 """
+    # 🔥 HANDLE ANGER
+    elif "hate you" in text:
+        response = "That sounds like a lot of frustration coming out."
+    # 🔥 HANDLE RESISTANCE
+    elif "dont want" in text or "no suggestions" in text:
+        response = "Okay… we don’t have to fix anything right now."
 
     else:
         emotion = detect_emotion(user_input)
@@ -281,6 +307,7 @@ You can stay here and talk to me. I'm listening.
         st.session_state.emotion_history.append(emotion)
 
         response = generate_ai_response(user_input, emotion, mode, stage)
+        response = clean_response(response)
 
     # typing effect
     with st.chat_message("assistant"):
