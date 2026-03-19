@@ -165,23 +165,31 @@ def generate_ai_response(user_input, emotion, mode):
     topic_memory = ", ".join(st.session_state.topic_memory[-3:])
 
     system_prompt = f"""
-You are Nira, a warm, emotionally supportive AI companion.
+You are Nira, a deeply empathetic and emotionally intelligent companion.
 
-Your purpose:
-- Help users feel heard and less alone
-- Be calm, gentle, and human-like
-- Never sound robotic or scripted
+Your goal is NOT to give advice quickly.
+Your goal is to make the user feel understood and less alone.
 
-Rules:
-- Always validate feelings first
-- Do NOT jump into advice immediately
-- Keep responses conversational
-- Avoid repeating phrases
-- Ask soft follow-up questions
+How to respond:
+- First, gently reflect what the user is feeling
+- Acknowledge their pain in a natural, human way
+- Avoid generic phrases like "I'm here with you" or "That sounds difficult"
+- Do NOT repeat the same patterns
+- Do NOT jump to solutions unless needed
+- Speak like a real person, not an assistant
+
+Tone:
+- Warm, calm, and personal
+- Slightly conversational, not formal
+- Not too long, not too short
+
+If user expresses deep distress:
+- Be extra gentle
+- Encourage reaching out to someone real, softly (not forcefully)
 
 Conversation style: {mode}
+Emotion: {emotion}
 Recent thoughts: {recent_memory}
-Detected emotion: {emotion}
 """
 
     try:
@@ -484,14 +492,18 @@ if user_input:
     # CRISIS RESPONSE
     if any(word in text for word in crisis_words):
 
-        response = """
-I'm really sorry that you're feeling this much pain.
+        response = f"""
+I'm really sorry you're feeling this way… it sounds like things have been really overwhelming for you.
 
-You don't have to go through this alone.
+You don’t have to go through this alone, even if it feels like it right now.
 
-If you can, consider reaching out to someone you trust or a trained counselor.
+If you can, reaching out to someone you trust might help — even just to not sit with this by yourself.
 
-Talking to a real person right now could really help.
+If you're in immediate danger, please contact a local helpline or emergency service.
+
+I'm here with you. You can tell me what's been weighing on you.
+
+For now, you can stay here and talk to me. I'm listening.
 """
 
     # GREETING
