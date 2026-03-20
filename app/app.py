@@ -4,6 +4,11 @@ import random
 import time
 import pandas as pd
 import requests
+from dotenv import load_dotenv
+import os
+import re
+
+load_dotenv()
 
 # -----------------------------
 # PAGE CONFIG
@@ -205,6 +210,43 @@ curiosity_pool = [
 
 ]
 
+
+
+
+def clean_response(text):
+    if not text:
+        return text
+
+    # fix glued lowercase words using common patterns
+    text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+
+    # fix common broken joins
+    fixes = {
+        "thatloneliness": "that loneliness",
+        "fightreally": "fight really",
+        "ifeel": "i feel",
+        "iwant": "i want",
+        "imso": "i'm so",
+        "itsreally": "it's really"
+    }
+
+    for wrong, correct in fixes.items():
+        text = text.replace(wrong, correct)
+
+    return text
+
+def get_memory_reference():
+
+    if len(st.session_state.messages) < 6:
+        return ""
+
+    # get a past user message (not too recent)
+    for msg in reversed(st.session_state.messages[:-2]):
+        if msg["role"] == "user":
+            return f"\n\nYou mentioned earlier: \"{msg['content']}\""
+
+    return ""
+
 # -----------------------------
 # RESPONSE GENERATOR
 # -----------------------------
@@ -214,32 +256,52 @@ def generate_ai_response(user_input, emotion, history):
     url = "https://openrouter.ai/api/v1/chat/completions"
 
     headers = {
-        "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+       "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
         "Content-Type": "application/json"
     }
+    memory_context = ""
+    for msg in reversed(history[:-2]):
+        if msg["role"] == "user":
+            memory_context = f"The user earlier mentioned: {msg['content']}"
+            break
+    
 
     messages = [
         {
             "role": "system",
             "content": f"""
-You are Nira, a warm, kind, emotionally supportive companion.
+You are Nira, a gentle and emotionally present companion.
 
-You speak like a real human friend texting.
-You are gentle, natural, and never robotic.
+You speak like a real human who genuinely cares.
 
-Rules:
-- Always validate feelings first
-- Keep responses conversational
-- Avoid repetition
-- Be calm and supportive
-- Keep responses 2–5 sentences
-- Give advices only when it is asked
-- Current detected emotion: {emotion}
+IMPORTANT:
+- Keep responses short (1–3 sentences)
+- But NEVER sound cold or detached
+- Always sound emotionally present
+- Avoid repeating the same sentence across responses.
+- If you already asked something, don’t repeat it again.
+
+Style:
+- warm, soft, slightly casual
+- use small human touches like "yeah", "hmm", "that sounds really hard"
+- speak like you're sitting next to them, not analyzing them
+
+You:
+- acknowledge feelings in a personal, human way (not generic phrases)
+- reflect naturally
+- sometimes ask ONE gentle question
+
+Avoid:
+- robotic phrases like "I hear that loneliness"
+- overly formal or neutral tone
+
+You are here to be with them, not just respond.
+
+Current emotion: {emotion}{memory_context}
 """
         }
     ]
-
-    for msg in history[-6:]:
+    for msg in history[-4:]:
         messages.append({
             "role": msg["role"],
             "content": msg["content"]
@@ -249,16 +311,23 @@ Rules:
         "role": "user",
         "content": user_input
     })
-
     data = {
-        "model": "openrouter/free",
-        "messages": messages
-    }
+    "model": "openrouter/free",
+    "messages": messages,
+    "temperature": 0.7,
+    "max_tokens": 120
+}
 
     response = requests.post(url, headers=headers, json=data)
-
-    return response.json()['choices'][0]['message']['content']
-
+    if response.status_code != 200:
+        print(response.text)  # debug
+        return None
+    
+    res_json = response.json()
+    if "choices" not in res_json:
+        print(res_json)  # debug
+        return None
+    return res_json['choices'][0]['message']['content']
 
 
 
@@ -383,13 +452,16 @@ greetings = ["hi","hello","hey","yo"]
 closings = ["bye","thanks","thank you","im done","i'm done","bye for now","bye bye", "later","thank you for now","i should leave"]
 
 if user_input:
+    user_input = user_input.strip()
+    user_input = " ".join(user_input.split())
 
     st.chat_message("user").write(user_input)
 
+    clean_input = user_input.strip()
     st.session_state.messages.append({
-        "role":"user",
-        "content":user_input
-    })
+    "role":"user",
+    "content": clean_input
+})
 
     text = user_input.lower().strip()
 
@@ -425,6 +497,9 @@ Talking to a real person right now could really help.
         "No worries at all. I'm here whenever you want to come back."
         ])
 
+    elif "hate you" in text:
+        response = "hey… that’s okay. if something felt off, you can tell me. I’m here to listen, not judge."
+
     else:
 
         vector = vectorizer.transform([user_input])
@@ -440,8 +515,13 @@ Talking to a real person right now could really help.
         user_input,
         emotion,
         st.session_state.messages
-        )
-        except:
+    )
+            response = clean_response(response)
+
+            if not response:
+                response = "I'm here with you. Want to tell me a bit more?"
+        except Exception as e:
+            print("API ERROR:", e)
             response = "I'm here with you. Want to tell me a bit more?"
     
     
