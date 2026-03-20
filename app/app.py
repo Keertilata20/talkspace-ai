@@ -3,6 +3,7 @@ import joblib
 import random
 import time
 import pandas as pd
+import requests
 
 # -----------------------------
 # PAGE CONFIG
@@ -39,6 +40,13 @@ background-color:#F1F5F3;
 .block-container {
 padding-top:2rem;
 max-width:900px;
+}
+            
+            [data-testid="stChatMessage"] {
+    border-radius: 15px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background-color: rgba(255,255,255,0.6);
 }
 
 </style>
@@ -201,97 +209,58 @@ curiosity_pool = [
 # RESPONSE GENERATOR
 # -----------------------------
 
-def generate_response(prob, emotion, mode):
+def generate_ai_response(user_input, emotion, history):
 
-    validation = random.choice(validation_pool)
-    support = random.choice(support_pool)
-    curiosity = random.choice(curiosity_pool)
-    suggestions = coping_suggestions()
+    url = "https://openrouter.ai/api/v1/chat/completions"
 
-    memory_reference = ""
+    headers = {
+        "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+        "Content-Type": "application/json"
+    }
 
-    if len(st.session_state.topic_memory) > 1:
+    messages = [
+        {
+            "role": "system",
+            "content": f"""
+You are Nira, a warm, kind, emotionally supportive companion.
 
-        topic = st.session_state.topic_memory[-2]
+You speak like a real human friend texting.
+You are gentle, natural, and never robotic.
 
-        if topic != "general":
-            memory_reference = f"Earlier you mentioned something related to {topic}. That can be really hard to deal with.\n\n"
-
-    if mode == "Supportive Friend":
-
-        if prob > 0.65:
-
-            return f"""
-{memory_reference}{validation}
-
-{support}
-
-🌿 Something that might help a little right now:
-
-{suggestions}
-
-{curiosity}
+Rules:
+- Always validate feelings first
+- Keep responses conversational
+- Avoid repetition
+- Be calm and supportive
+- Keep responses 2–5 sentences
+- Give advices only when it is asked
+- Current detected emotion: {emotion}
 """
+        }
+    ]
 
-        elif prob > 0.40:
+    for msg in history[-6:]:
+        messages.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
 
-            return f"""
-{memory_reference}{validation}
+    messages.append({
+        "role": "user",
+        "content": user_input
+    })
 
-{support}
+    data = {
+        "model": "openrouter/free",
+        "messages": messages
+    }
 
-Sometimes even small things can help shift the feeling.
+    response = requests.post(url, headers=headers, json=data)
 
-🌿 Maybe try one of these:
+    return response.json()['choices'][0]['message']['content']
 
-{suggestions}
-"""
 
-        else:
 
-            return f"""
-{support}
-
-{curiosity}
-"""
-
-    else:
-
-        if prob > 0.65:
-
-            return f"""
-Thank you for sharing that.
-
-{memory_reference}{validation}
-
-Sometimes when emotions build up they can feel overwhelming.
-
-🌿 One grounding step you might try:
-
-{suggestions}
-
-{curiosity}
-"""
-
-        elif prob > 0.40:
-
-            return f"""
-I appreciate you opening up.
-
-{validation}
-
-🌿 One small step that sometimes helps:
-
-{suggestions}
-"""
-
-        else:
-
-            return """
-Thank you for reflecting on how you're feeling.
-
-If you'd like, you can share more about what's on your mind.
-"""
 
 # -----------------------------
 # EMOTIONAL WEATHER
@@ -466,24 +435,32 @@ Talking to a real person right now could really help.
         st.session_state.topic_memory.append(emotion)
         st.session_state.emotion_history.append(emotion)
 
-        response = generate_response(prob, emotion, mode)
-
+        try:
+            response = generate_ai_response(
+        user_input,
+        emotion,
+        st.session_state.messages
+        )
+        except:
+            response = "I'm here with you. Want to tell me a bit more?"
+    
+    
     # THINKING ANIMATION
 
     with st.chat_message("assistant"):
-
         placeholder = st.empty()
-
-        placeholder.markdown("🌿 Nira is thinking...")
-        time.sleep(0.6)
-
+        placeholder.markdown("🌿 Nira is typing...")
+        time.sleep(1)
+        
         typed = ""
-
         for char in response:
             typed += char
             placeholder.markdown(typed)
-            time.sleep(0.01)
-
+            
+            if char in ".!?":
+                time.sleep(0.2)
+            else:
+                time.sleep(0.01)
     st.session_state.messages.append({
         "role":"assistant",
         "content":response
