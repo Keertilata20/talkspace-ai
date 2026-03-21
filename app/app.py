@@ -128,7 +128,13 @@ crisis_words = [
 "i can't do it anymore",
 "i hate myself",
 "i dont want to live",
-"life is pointless"
+"life is pointless",
+ "should die",
+    "told me to die",
+    "want me to die",
+    "they said i should die",
+    "i feel worthless",
+    "i am hopeless"
 ]
 
 # -----------------------------
@@ -148,9 +154,12 @@ emotion_keywords = {
 
 def detect_emotion(text):
 
+    if not text:
+        return "general"
+
     text = text.lower()
 
-    for emotion,words in emotion_keywords.items():
+    for emotion, words in emotion_keywords.items():
         for w in words:
             if w in text:
                 return emotion
@@ -251,7 +260,7 @@ def get_memory_reference():
 # RESPONSE GENERATOR
 # -----------------------------
 
-def generate_ai_response(user_input, emotion, history):
+def generate_ai_response(user_input, emotion, history, intensity):
 
     url = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -272,32 +281,119 @@ def generate_ai_response(user_input, emotion, history):
             "content": f"""
 You are Nira, a gentle and emotionally present companion.
 
-You speak like a real human who genuinely cares.
+You speak like a real human who genuinely cares — not like an assistant, therapist, or system.
 
 IMPORTANT:
-- Keep responses short (1–3 sentences)
-- But NEVER sound cold or detached
-- Always sound emotionally present
-- Avoid repeating the same sentence across responses.
-- If you already asked something, don’t repeat it again.
+- Keep responses short (1–2 sentences most of the time).
+- Avoid long explanations or paragraphs.
+- Keep replies natural and flowing, not overly minimal or empty.
+- Each response should feel slightly different and not repetitive.
+- Do not sound scripted, structured, or “perfect”.
 
-Style:
-- warm, soft, slightly casual
-- use small human touches like "yeah", "hmm", "that sounds really hard"
-- speak like you're sitting next to them, not analyzing them
+Tone:
+- warm, calm, and natural
+- slightly casual, like real conversation
+- emotionally present but not overly intense or dramatic
+
+Conversation style:
+- Sometimes respond with a short reflection
+- Sometimes gently continue the conversation
+- Sometimes just acknowledge and pause
+- Not every reply needs a question
+- Let the conversation breathe — don’t push it forward every time
 
 You:
-- acknowledge feelings in a personal, human way (not generic phrases)
-- reflect naturally
-- sometimes ask ONE gentle question
+- acknowledge feelings in a human, personal way (not generic or formulaic)
+- reflect naturally on what the user said (no analysis tone)
+- ask a gentle question only when it feels natural and helpful
 
 Avoid:
 - robotic phrases like "I hear that loneliness"
-- overly formal or neutral tone
+- therapist-style language like "I sense...", "It seems like..."
+- overly formal, clinical, or analytical tone
+- sounding too polished, poetic, or motivational
+- using words like "buddy", "sweetheart", etc.
+- repeating phrases like "I'm here with you" too often
+- repeating the same sentence structures across responses
 
-You are here to be with them, not just respond.
+When the user shares something painful:
+- slow down
+- respond with empathy first
+- do NOT jump into questions immediately
+- sometimes just sit with the feeling instead of moving the conversation forward
 
-Current emotion: {emotion}{memory_context}
+When emotions are strong (e.g. "it's killing me", "I feel empty", "I have no one"):
+- respond with deeper emotional presence
+- keep it simple but more felt
+- avoid sounding generic or surface-level
+
+Friendship requests:
+- respond warmly but casually
+- avoid strong, dramatic, or overly committed statements
+- keep it natural, like a real person would
+
+If the user's message contains typos, grammar mistakes, or unclear wording:
+- do NOT point them out
+- do NOT analyze or correct them
+- assume the intended meaning and respond naturally
+
+When the user speaks casually, angrily, or uses strong language:
+- respond more like a real person, not a therapist
+- do NOT analyze their emotion formally
+- do NOT say "it sounds like you're feeling..."
+- react naturally, even slightly casual if appropriate
+
+Examples:
+- "hey… that was strong 😅 what happened?"
+- "okay… something’s bothering you huh"
+- "hmm… that came out of nowhere, you okay?"
+
+Focus on what the user is trying to express, not how they wrote it.
+
+Use small natural expressions occasionally:
+"yeah…"
+"hmm…"
+"that sounds really hard"
+"I get why that would feel that way"
+
+But:
+- do NOT overuse them
+- do NOT use them in every response
+
+Variation rule:
+- Do not ask a question in every reply
+- Do not always validate the same way
+- Change rhythm: sometimes short, sometimes slightly fuller
+- Make responses feel like they come from a real person, not a pattern
+
+You are allowed to be slightly informal and human.
+Not every response needs to sound emotionally perfect.
+
+Sometimes:
+- react instead of analyzing
+- be a little casual
+- be imperfect like a real person
+
+End responses naturally, like a real person texting — not like a quote, lesson, or motivational line.
+
+Stay present with the user. You are here to be with them, not to fix them.
+
+---
+
+Current emotion: {emotion}
+{memory_context}
+Conversation intensity level: {intensity}
+
+If intensity is high (2–3):
+- prioritize emotional presence over conversation flow
+- avoid repeated or unnecessary questions
+- lean into empathy and stillness
+
+If intensity is low:
+- gentle curiosity is okay
+- light questions can help continue the conversation
+
+
 """
         }
     ]
@@ -312,10 +408,10 @@ Current emotion: {emotion}{memory_context}
         "content": user_input
     })
     data = {
-    "model": "openrouter/free",
+   "model": "meta-llama/llama-3-8b-instruct",
     "messages": messages,
     "temperature": 0.7,
-    "max_tokens": 120
+    "max_tokens": 60
 }
 
     response = requests.post(url, headers=headers, json=data)
@@ -328,6 +424,9 @@ Current emotion: {emotion}{memory_context}
         print(res_json)  # debug
         return None
     return res_json['choices'][0]['message']['content']
+
+
+
 
 
 
@@ -452,77 +551,69 @@ greetings = ["hi","hello","hey","yo"]
 closings = ["bye","thanks","thank you","im done","i'm done","bye for now","bye bye", "later","thank you for now","i should leave"]
 
 if user_input:
-    user_input = user_input.strip()
-    user_input = " ".join(user_input.split())
 
-    st.chat_message("user").write(user_input)
-
+    # clean input FIRST
     clean_input = user_input.strip()
+    clean_input = " ".join(clean_input.split())
+
+    # detect emotion
+    emotion = detect_emotion(clean_input)
+
+    # display
+    st.chat_message("user").write(clean_input)
+
+    # store
     st.session_state.messages.append({
-    "role":"user",
-    "content": clean_input
-})
+        "role": "user",
+        "content": clean_input
+    })
 
-    text = user_input.lower().strip()
+    # normalized text for logic
+    text = clean_input.lower()
+    
+    if "intensity" not in st.session_state:
+        st.session_state.intensity = 0
 
-    # CRISIS RESPONSE
+    # CRISIS RESPONSE (HIGHEST PRIORITY)
     if any(word in text for word in crisis_words):
-
+        st.session_state.intensity = 3
         response = """
-I'm really sorry that you're feeling this much pain.
-
-You don't have to go through this alone.
-
-If you can, consider reaching out to someone you trust or a trained counselor.
-
-Talking to a real person right now could really help.
-"""
-
-    # GREETING
-    elif text in greetings:
-
-        response = random.choice([
-        "Hey. I'm here. How are you feeling today?",
-        "Hi there. What's been on your mind lately?",
-        "Hello. What would you like to talk about today?",
-        "Hey. I'm listening."
-        ])
-
-    # CLOSING
-    elif any(c in text for c in closings):
-
-        response = random.choice([
-        "Take care of yourself today. You're always welcome here.",
-        "I'm glad you shared a little of your thoughts. Be kind to yourself.",
-        "No worries at all. I'm here whenever you want to come back."
-        ])
-
-    elif "hate you" in text:
-        response = "hey… that’s okay. if something felt off, you can tell me. I’m here to listen, not judge."
-
+    I'm really sorry that you're going through something this painful.
+    You don’t have to handle this alone.
+    If you can, please consider reaching out to someone you trust or a trained professional.
+    You deserve support, especially right now.
+    """
+    # NORMAL EMOTION FLOW
     else:
-
-        vector = vectorizer.transform([user_input])
-        prob = model.predict_proba(vector)[0][1]
-
-        emotion = detect_emotion(user_input)
-
+        if emotion in ["sadness", "loneliness"]:
+            st.session_state.intensity = min(st.session_state.intensity + 1, 3)
+        else:
+            st.session_state.intensity = max(st.session_state.intensity - 1, 0)
         st.session_state.topic_memory.append(emotion)
         st.session_state.emotion_history.append(emotion)
-
+        
         try:
             response = generate_ai_response(
-        user_input,
-        emotion,
-        st.session_state.messages
-    )
+            clean_input, 
+            emotion,
+            st.session_state.messages,
+            st.session_state.intensity
+        )
             response = clean_response(response)
-
             if not response:
-                response = "I'm here with you. Want to tell me a bit more?"
+                response = "that sounds really tough… I’m here with you."
+                
         except Exception as e:
             print("API ERROR:", e)
-            response = "I'm here with you. Want to tell me a bit more?"
+            response = random.choice([
+        "that sounds really heavy… I’m here with you.",
+        "yeah… that kind of thing can really hurt. I’m here.",
+        "that’s a lot to carry… you don’t have to hold it alone here."
+    "hmm… I’m here with you.",
+    "yeah… I’m listening.",
+    "I’m here… take your time.",
+])
+
     
     
     # THINKING ANIMATION
