@@ -63,26 +63,65 @@ vectorizer = joblib.load("model/vectorizer.pkl")
 st.markdown("""
 <style>
 
+/* =========================
+   🌿 COLOR SYSTEM
+========================= */
+:root {
+    --bg-soft: #F7FAF8;
+    --bg-sidebar: #EEF5F1;
+    --accent: #86EFAC;
+    --accent-soft: #D1FAE5;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+}
+
+/* =========================
+   🌍 BACKGROUND
+========================= */
 body {
     background: linear-gradient(120deg, #E8F5E9, #F1F8F6, #E3F2FD);
 }
 
+/* =========================
+   📦 SIDEBAR (UPGRADED)
+========================= */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #F1F5F3, #E8F0EC);
+    background: var(--bg-sidebar);
     padding: 1rem;
-}
-            [data-testid="stSidebar"] h3 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    color: #374151;
+    border-right: 1px solid #E5E7EB;
 }
 
-.block-container {
-padding-top:2rem;
-max-width:900px;
+[data-testid="stSidebar"] h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--text-main);
 }
-            
-            [data-testid="stChatMessage"] {
+
+/* Sidebar cards (NEW) */
+.sidebar-card {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: all 0.2s ease;
+}
+.sidebar-card:hover {
+    transform: translateY(-2px);
+}
+
+/* =========================
+   📏 LAYOUT
+========================= */
+.block-container {
+    padding-top:2rem;
+    max-width:900px;
+}
+
+/* =========================
+   💬 CHAT MESSAGES
+========================= */
+[data-testid="stChatMessage"] {
     border-radius: 18px;
     padding: 14px 18px;
     max-width:75%;
@@ -91,17 +130,23 @@ max-width:900px;
     backdrop-filter: blur(6px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     transition: all 0.2s ease;
-               animation: fadeIn 0.3s ease-in;
+    animation: fadeIn 0.3s ease-in;
+    gap: 10px;
 }
-            @keyframes fadeIn {
+
+@keyframes fadeIn {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
 }
-            [data-testid="stChatMessage"]:hover {
+
+[data-testid="stChatMessage"]:hover {
     transform: translateY(-2px);
-         
 }
-            img {
+
+/* =========================
+   🧑 AVATARS
+========================= */
+img {
     border-radius: 50%;
     box-shadow: 0 3px 8px rgba(0,0,0,0.08);
 }
@@ -115,31 +160,76 @@ max-width:900px;
 [data-testid="stChatMessage"][data-testid*="user"] img {
     opacity: 0.95;
 }
-            
 
-/* user messages */
+/* =========================
+   👤 USER MESSAGES
+========================= */
 [data-testid="stChatMessage"][data-testid*="user"] {
     margin-left: auto;
     background: linear-gradient(135deg, #DCF8E6, #CFF3E1);
     border-radius: 18px 18px 4px 18px;
-
 }
 
-/* assistant messages */
+/* =========================
+   🌿 NIRA MESSAGES (UPGRADED)
+========================= */
 [data-testid="stChatMessage"][data-testid*="assistant"] {
     margin-right: auto;
-    background: #ffffff;
+    background: linear-gradient(135deg, #F0FDF4, #ECFDF5);
     border-radius: 18px 18px 18px 4px;
+    border-left: 3px solid #86EFAC;
+    animation: breathe 3s ease-in-out infinite;
 }
-            textarea {
+
+@keyframes breathe {
+    0% { box-shadow: 0 0 0 0 rgba(134,239,172,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(134,239,172,0.05); }
+    100% { box-shadow: 0 0 0 0 rgba(134,239,172,0.2); }
+}
+
+/* =========================
+   ✍️ INPUT BOX
+========================= */
+textarea {
     border-radius: 999px !important;
     padding: 14px 20px !important;
     border: 1px solid #e5e7eb !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-            textarea:focus {
+
+textarea:focus {
     border-color: #86efac !important;
     box-shadow: 0 0 0 2px rgba(134,239,172,0.3);
+}
+
+/* =========================
+   🔘 BUTTONS (NEW POLISH)
+========================= */
+button[kind="secondary"] {
+    border-radius: 10px !important;
+    border: 1px solid #E5E7EB !important;
+    background: #ffffff !important;
+    transition: all 0.2s ease;
+}
+
+button[kind="secondary"]:hover {
+    border-color: #86EFAC !important;
+    transform: translateY(-1px);
+}
+
+/* =========================
+   📈 CHART (SIMPLIFY LOOK)
+========================= */
+[data-testid="stLineChart"] {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 8px;
+}
+            /* Mood ring animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
 }
 
 </style>
@@ -155,6 +245,7 @@ st.markdown("""
     <p style="color:#6b7280;">Nira is here… just for you</p>
 </div>
 """, unsafe_allow_html=True)
+
 # -----------------------------
 # GET CONVERSATIONS
 # -----------------------------
@@ -188,64 +279,6 @@ def get_conversations():
 # -----------------------------
 # SIDEBAR
 # -----------------------------
-
-mode = st.sidebar.selectbox(
-"Conversation Style",
-["Supportive Friend","Counselor"]
-)
-
-
-if st.sidebar.button("➕ New Chat"):
-    new_conv = str(uuid.uuid4())
-    st.session_state.conversation_id = new_conv
-    st.query_params["conversation_id"] = new_conv
-    st.session_state.messages = []
-    st.rerun()
-
-if st.sidebar.button("Clear Conversation"):
-    # delete from database
-    supabase.table("messages") \
-    .delete() \
-    .eq("user_id", st.session_state.user_id) \
-    .eq("conversation_id", st.session_state.conversation_id) \
-    .execute()
-
-    # clear session
-    st.session_state.messages = []
-    st.session_state.topic_memory = []
-    st.session_state.emotion_history = []
-
-    st.rerun()
-
-st.sidebar.markdown("### 💬 Your Chats")
-
-conversations = get_conversations()
-
-for cid, title in conversations.items():
-    if st.sidebar.button(title, key=cid):
-        st.session_state.conversation_id = cid
-        st.query_params["conversation_id"] = cid
-        st.session_state.messages = []
-        st.rerun()
-
-
-# -----------------------------
-# DAILY AFFIRMATION
-# -----------------------------
-
-affirmations = [
-
-"You deserve patience today.",
-"Small steps still matter.",
-"It's okay to take things slowly.",
-"Your feelings are valid.",
-"You are stronger than you think."
-
-]
-
-st.sidebar.markdown("### 🌱 Small Reminder")
-st.sidebar.write(random.choice(affirmations))
-
 
 
 
@@ -294,7 +327,19 @@ crisis_words = [
     "want me to die",
     "they said i should die",
     "i feel worthless",
-    "i am hopeless"
+    "i am hopeless",
+    "i will kill myself",
+    "i will die",
+    "i wish to die",
+    "i wish i was dead",
+    "i want to disappear",
+    "life is pointless",
+    "i hate myself",
+    "i dont want to live",
+    "i will kill",
+    "kill this time",
+    "i will surely kill",
+    "i feel like dying"
 ]
 
 # -----------------------------
@@ -312,6 +357,11 @@ emotion_keywords = {
 
 }
 
+# -----------------------------
+# EMOTIONS DETECTION
+# -----------------------------
+
+
 def detect_emotion(text):
 
     if not text:
@@ -319,6 +369,13 @@ def detect_emotion(text):
 
     text = text.lower()
 
+    # 🚨 SMART CRISIS DETECTION
+    crisis_keywords = ["kill", "die", "suicide", "end my life", "don't want to live"]
+
+    if any(word in text for word in crisis_keywords):
+        return "crisis"
+
+    # normal emotion detection
     for emotion, words in emotion_keywords.items():
         for w in words:
             if w in text:
@@ -596,73 +653,210 @@ If intensity is low:
 # EMOTIONAL WEATHER
 # -----------------------------
 
-st.sidebar.markdown("### 🌤 Emotional Weather")
+st.sidebar.markdown("## 🌿 Right now")
 
 if st.session_state.emotion_history:
+    emotion = st.session_state.emotion_history[-1]
 
-    current_emotion = st.session_state.emotion_history[-1]
-
-    emotion_labels = {
-        "loneliness":"Feeling Lonely",
-        "sadness":"Feeling Low",
-        "stress":"Feeling Stressed",
-        "anxiety":"Feeling Anxious",
-        "social":"Social Pressure",
-        "selfworth":"Self Doubt",
-        "general":"Neutral"
+    emotion_map = {
+        "loneliness": ("🌧️", "Feeling lonely"),
+        "sadness": ("🌙", "Feeling low"),
+        "stress": ("🔥", "Feeling stressed"),
+        "anxiety": ("🌪️", "Feeling anxious"),
+        "social": ("👥", "Social pressure"),
+        "selfworth": ("🪞", "Self doubt"),
+        "general": ("☁️", "Neutral"),
+        "crisis": ("🚨", "Critical state")
     }
 
-    st.sidebar.write(emotion_labels.get(current_emotion))
+    emoji, label = emotion_map.get(emotion, ("☁️", "Neutral"))
+
+    st.sidebar.markdown(f"""
+    <div class="sidebar-card">
+        <div style="font-size:20px;">{emoji}</div>
+        <div style="font-weight:500;">{label}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 else:
-    st.sidebar.write("No signals yet")
-
-# -----------------------------
-# MOOD JOURNEY
-# -----------------------------
-
-st.sidebar.markdown("### 📈 Mood Journey")
+    st.sidebar.markdown("""
+<div class="sidebar-card" style="color:#6B7280;">
+No signals yet
+</div>
+""", unsafe_allow_html=True)
+    
+st.sidebar.markdown("### 🧘 Your state")
 
 if st.session_state.emotion_history:
+    emotion = st.session_state.emotion_history[-1]
 
-    mood_map = {
-        "loneliness":2,
-        "sadness":2,
-        "stress":3,
-        "anxiety":3,
-        "social":3,
-        "selfworth":2,
-        "general":4
+    emoji_map = {
+        "loneliness": "🌧️",
+        "sadness": "🌙",
+        "stress": "🔥",
+        "anxiety": "🌪️",
+        "social": "👥",
+        "selfworth": "🪞",
+        "general": "☁️",
+        "crisis": "🚨"
     }
 
-    values = [mood_map.get(e,3) for e in st.session_state.emotion_history]
+    color_map = {
+        "loneliness": "#60A5FA",
+        "sadness": "#818CF8",
+        "stress": "#F97316",
+        "anxiety": "#FACC15",
+        "social": "#A78BFA",
+        "selfworth": "#FB7185",
+        "general": "#86EFAC",
+        "crisis": "#EF4444"  
+    }
 
-    df = pd.DataFrame(values, columns=["Mood"])
+    emoji = emoji_map.get(emotion, "☁️")
+    color = color_map.get(emotion, "#86EFAC")
 
-    st.sidebar.line_chart(df)
+    st.sidebar.markdown(f"""
+    <div style="
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        margin:10px 0;
+    ">
+        <div style="
+            width:60px;
+            height:60px;
+            border-radius:50%;
+            background:{color};
+            box-shadow: 0 0 20px {color}55;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:white;
+            font-size:20px;
+        ">
+        {emoji}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+else:
+    st.sidebar.markdown("""
+    <div class="sidebar-card" style="color:#6B7280;">
+    No state yet
+    </div>
+    """, unsafe_allow_html=True)
 
 
+# -----------------------------
+# DAILY AFFIRMATION
+# -----------------------------
+
+affirmations = [
+
+"You deserve patience today.",
+"Small steps still matter.",
+"It's okay to take things slowly.",
+"Your feelings are valid.",
+"You are stronger than you think."
+
+]
+
+st.sidebar.markdown("### 🌱 A small note")
+
+st.sidebar.markdown(f"""
+<div class="sidebar-card" style="font-style:italic; color:#4B5563;">
+{random.choice(affirmations)}
+</div>
+""", unsafe_allow_html=True)
 # -----------------------------
 # CALM TOOLS
 # -----------------------------
 
-st.sidebar.markdown("### 🫁 Calm Tools")
+st.sidebar.markdown("### 🫁 Calm space")
 
-if st.sidebar.button("Guided Breathing"):
+if st.sidebar.button("Start breathing"):
 
-    st.sidebar.write("Follow the breathing guide:")
+    breath = st.sidebar.empty()
 
     for i in range(3):
 
-        st.sidebar.write("Breathe in...")
+        breath.markdown("""
+        <div style="text-align:center; font-size:18px;">
+        🫁 Inhale...
+        </div>
+        """, unsafe_allow_html=True)
+        time.sleep(2)
+
+        breath.markdown("""
+        <div style="text-align:center; font-size:18px;">
+        ⏸ Hold...
+        </div>
+        """, unsafe_allow_html=True)
+        time.sleep(2)
+
+        breath.markdown("""
+        <div style="text-align:center; font-size:18px;">
+        🌬 Exhale...
+        </div>
+        """, unsafe_allow_html=True)
         time.sleep(3)
 
-        st.sidebar.write("Hold...")
-        time.sleep(3)
+# -----------------------------
+# CONVERSATIONS
+# -----------------------------
 
-        st.sidebar.write("Breathe out...")
-        time.sleep(4)
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 💬 Conversations")
+conversations = get_conversations()
+
+if not conversations:
+    st.sidebar.markdown("""
+    <div class="sidebar-card" style="color:#6B7280;">
+    No conversations yet
+    </div>
+    """, unsafe_allow_html=True)
+
+for cid, title in conversations.items():
+    if st.sidebar.button(title, key=cid):
+        st.session_state.conversation_id = cid
+        st.query_params["conversation_id"] = cid
+        st.session_state.messages = []
+        st.rerun()
+
+
+# -----------------------------
+# CONTROLS
+# -----------------------------
+
+
+mode = st.sidebar.selectbox(
+"Conversation Style",
+["Supportive Friend","Counselor"]
+)
+
+
+if st.sidebar.button("➕ New Chat"):
+    new_conv = str(uuid.uuid4())
+    st.session_state.conversation_id = new_conv
+    st.query_params["conversation_id"] = new_conv
+    st.session_state.messages = []
+    st.rerun()
+
+if st.sidebar.button("Clear Conversation"):
+    # delete from database
+    supabase.table("messages") \
+    .delete() \
+    .eq("user_id", st.session_state.user_id) \
+    .eq("conversation_id", st.session_state.conversation_id) \
+    .execute()
+
+    # clear session
+    st.session_state.messages = []
+    st.session_state.topic_memory = []
+    st.session_state.emotion_history = []
+
+    st.rerun()
 # -----------------------------
 # WELCOME PANEL
 # -----------------------------
@@ -723,6 +917,7 @@ if user_input:
 
     # detect emotion
     emotion = detect_emotion(clean_input)
+    st.session_state.emotion_history.append(emotion)
 
     # display
     with st.chat_message("user", avatar=USER_AVATAR):
@@ -748,14 +943,17 @@ if user_input:
         st.session_state.intensity = 0
 
     # CRISIS RESPONSE (HIGHEST PRIORITY)
-    if any(word in text for word in crisis_words):
+    if emotion == "crisis":
         st.session_state.intensity = 3
-        response = """
-    I'm really sorry that you're going through something this painful.
-    You don’t have to handle this alone.
-    If you can, please consider reaching out to someone you trust or a trained professional.
-    You deserve support, especially right now.
-    """
+    
+        crisis_responses = [
+    "hey… that sounds really heavy. you don’t have to sit with it alone right now.",
+    "i’m really glad you said that out loud… that kind of feeling can be overwhelming.",
+    "that sounds like a lot to carry… are you safe right now?",
+    "hmm… that’s really intense. i’m here with you.",
+    "i’m really sorry it feels this way… you don’t have to handle it alone."
+]
+        response = random.choice(crisis_responses)
     # NORMAL EMOTION FLOW
     else:
         if emotion in ["sadness", "loneliness"]:
@@ -763,7 +961,8 @@ if user_input:
         else:
             st.session_state.intensity = max(st.session_state.intensity - 1, 0)
         st.session_state.topic_memory.append(emotion)
-        st.session_state.emotion_history.append(emotion)
+        
+        
         
         try:
             response = generate_ai_response(
