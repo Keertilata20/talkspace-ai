@@ -7,8 +7,37 @@ import requests
 from dotenv import load_dotenv
 import os
 import re
+from supabase import create_client, Client
+import uuid
+
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 load_dotenv()
+
+
+# -----------------------------
+# USER IDENTIFICATION
+# -----------------------------
+query_params = st.query_params
+
+if "user_id" in query_params:
+    st.session_state.user_id = query_params["user_id"]
+else:
+    new_id = str(uuid.uuid4())
+    st.session_state.user_id = new_id
+    st.query_params["user_id"] = new_id
+
+
+if "conversation_id" in st.query_params:
+    st.session_state.conversation_id = st.query_params["conversation_id"]
+else:
+    new_conv = str(uuid.uuid4())
+    st.session_state.conversation_id = new_conv
+    st.query_params["conversation_id"] = new_conv
+
 
 # -----------------------------
 # PAGE CONFIG
@@ -35,11 +64,17 @@ st.markdown("""
 <style>
 
 body {
-background: linear-gradient(135deg,#F6F8F7,#EAF3EE);
+    background: linear-gradient(120deg, #E8F5E9, #F1F8F6, #E3F2FD);
 }
 
 [data-testid="stSidebar"] {
-background-color:#F1F5F3;
+    background: linear-gradient(180deg, #F1F5F3, #E8F0EC);
+    padding: 1rem;
+}
+            [data-testid="stSidebar"] h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #374151;
 }
 
 .block-container {
@@ -48,10 +83,63 @@ max-width:900px;
 }
             
             [data-testid="stChatMessage"] {
-    border-radius: 15px;
-    padding: 12px;
-    margin-bottom: 10px;
-    background-color: rgba(255,255,255,0.6);
+    border-radius: 18px;
+    padding: 14px 18px;
+    max-width:75%;
+    margin-bottom: 12px;
+    background-color: rgba(255,255,255,0.7);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+               animation: fadeIn 0.3s ease-in;
+}
+            @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+            [data-testid="stChatMessage"]:hover {
+    transform: translateY(-2px);
+         
+}
+            img {
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+/* Nira glow */
+[data-testid="stChatMessage"][data-testid*="assistant"] img {
+    box-shadow: 0 0 0 2px rgba(134,239,172,0.4);
+}
+
+/* User subtle */
+[data-testid="stChatMessage"][data-testid*="user"] img {
+    opacity: 0.95;
+}
+            
+
+/* user messages */
+[data-testid="stChatMessage"][data-testid*="user"] {
+    margin-left: auto;
+    background: linear-gradient(135deg, #DCF8E6, #CFF3E1);
+    border-radius: 18px 18px 4px 18px;
+
+}
+
+/* assistant messages */
+[data-testid="stChatMessage"][data-testid*="assistant"] {
+    margin-right: auto;
+    background: #ffffff;
+    border-radius: 18px 18px 18px 4px;
+}
+            textarea {
+    border-radius: 999px !important;
+    padding: 14px 20px !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+            textarea:focus {
+    border-color: #86efac !important;
+    box-shadow: 0 0 0 2px rgba(134,239,172,0.3);
 }
 
 </style>
@@ -62,12 +150,40 @@ max-width:900px;
 # -----------------------------
 
 st.markdown("""
-# 🌿 TalkSpace
+<div style="text-align:center; margin-bottom:20px;">
+    <h1 style="margin-bottom:5px;">🌿 TalkSpace</h1>
+    <p style="color:#6b7280;">Nira is here… just for you</p>
+</div>
+""", unsafe_allow_html=True)
+# -----------------------------
+# GET CONVERSATIONS
+# -----------------------------
 
-Your companion **🌿 Nira** is here to listen.
+def get_conversations():
+    response = supabase.table("messages") \
+        .select("conversation_id, content, role, created_at") \
+        .eq("user_id", st.session_state.user_id) \
+        .order("created_at") \
+        .execute()
 
-*A quiet place for your thoughts.*
-""")
+    data = response.data if response.data else []
+
+    conversations = {}
+    greetings = ["hi", "hello", "hey", "yo"]
+
+    for msg in data:
+        cid = msg["conversation_id"]
+
+        if cid not in conversations and msg["role"] == "user":
+            text = msg["content"].lower()
+
+            # skip boring greetings
+            if any(greet in text for greet in greetings) and len(text) < 10:
+                continue
+
+            conversations[cid] = msg["content"][:40]
+
+    return conversations
 
 # -----------------------------
 # SIDEBAR
@@ -78,12 +194,39 @@ mode = st.sidebar.selectbox(
 ["Supportive Friend","Counselor"]
 )
 
+
+if st.sidebar.button("➕ New Chat"):
+    new_conv = str(uuid.uuid4())
+    st.session_state.conversation_id = new_conv
+    st.query_params["conversation_id"] = new_conv
+    st.session_state.messages = []
+    st.rerun()
+
 if st.sidebar.button("Clear Conversation"):
+    # delete from database
+    supabase.table("messages") \
+    .delete() \
+    .eq("user_id", st.session_state.user_id) \
+    .eq("conversation_id", st.session_state.conversation_id) \
+    .execute()
+
+    # clear session
     st.session_state.messages = []
     st.session_state.topic_memory = []
     st.session_state.emotion_history = []
+
     st.rerun()
 
+st.sidebar.markdown("### 💬 Your Chats")
+
+conversations = get_conversations()
+
+for cid, title in conversations.items():
+    if st.sidebar.button(title, key=cid):
+        st.session_state.conversation_id = cid
+        st.query_params["conversation_id"] = cid
+        st.session_state.messages = []
+        st.rerun()
 
 
 # -----------------------------
@@ -102,12 +245,29 @@ affirmations = [
 
 st.sidebar.markdown("### 🌱 Small Reminder")
 st.sidebar.write(random.choice(affirmations))
+
+
+
+
+
 # -----------------------------
 # SESSION STATE
 # -----------------------------
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "messages" not in st.session_state or len(st.session_state.messages) == 0:
+    response = supabase.table("messages") \
+        .select("*") \
+        .eq("user_id", st.session_state.user_id) \
+        .eq("conversation_id", st.session_state.conversation_id) \
+        .order("created_at") \
+        .execute()
+
+    data = response.data if response.data else []
+
+    st.session_state.messages = [
+        {"role": msg["role"], "content": msg["content"]}
+        for msg in data
+    ]
 
 if "topic_memory" not in st.session_state:
     st.session_state.topic_memory = []
@@ -268,11 +428,11 @@ def generate_ai_response(user_input, emotion, history, intensity):
        "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
         "Content-Type": "application/json"
     }
+    user_messages = [m["content"] for m in history if m["role"] == "user"]
     memory_context = ""
-    for msg in reversed(history[:-2]):
-        if msg["role"] == "user":
-            memory_context = f"The user earlier mentioned: {msg['content']}"
-            break
+    if len(user_messages) >= 3:
+        recent = user_messages[-3:]
+        memory_context = f"Recent user themes: {', '.join(recent)}"
     
 
     messages = [
@@ -289,6 +449,7 @@ IMPORTANT:
 - Keep replies natural and flowing, not overly minimal or empty.
 - Each response should feel slightly different and not repetitive.
 - Do not sound scripted, structured, or “perfect”.
+- Keep language simple and everyday, like texting. Avoid complex or formal words.
 
 Tone:
 - warm, calm, and natural
@@ -315,6 +476,7 @@ Avoid:
 - using words like "buddy", "sweetheart", etc.
 - repeating phrases like "I'm here with you" too often
 - repeating the same sentence structures across responses
+- complex words like "yearning", "genuine connections", "it sounds like you're experiencing"
 
 When the user shares something painful:
 - slow down
@@ -537,9 +699,12 @@ Just talk.
 # -----------------------------
 # DISPLAY CHAT
 # -----------------------------
-
+USER_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+NIRA_AVATAR = "https://cdn-icons-png.flaticon.com/512/6997/6997662.png"
 for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    avatar = USER_AVATAR if msg["role"] == "user" else NIRA_AVATAR
+    with st.chat_message(msg["role"], avatar=avatar):
+        st.markdown(msg["content"])
 
 # -----------------------------
 # USER INPUT
@@ -560,13 +725,21 @@ if user_input:
     emotion = detect_emotion(clean_input)
 
     # display
-    st.chat_message("user").write(clean_input)
+    with st.chat_message("user", avatar=USER_AVATAR):
+        st.markdown(clean_input)
 
     # store
     st.session_state.messages.append({
         "role": "user",
         "content": clean_input
     })
+
+    supabase.table("messages").insert({
+    "user_id": st.session_state.user_id,
+    "conversation_id": st.session_state.conversation_id,
+    "role": "user",
+    "content": user_input
+}).execute()
 
     # normalized text for logic
     text = clean_input.lower()
@@ -618,7 +791,7 @@ if user_input:
     
     # THINKING ANIMATION
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=NIRA_AVATAR):
         placeholder = st.empty()
         placeholder.markdown("🌿 Nira is typing...")
         time.sleep(1)
@@ -636,3 +809,9 @@ if user_input:
         "role":"assistant",
         "content":response
     })
+    supabase.table("messages").insert({
+    "user_id": st.session_state.user_id,
+    "conversation_id": st.session_state.conversation_id,
+    "role": "assistant",
+    "content": response
+}).execute()
