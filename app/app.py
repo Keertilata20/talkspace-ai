@@ -9,6 +9,18 @@ from supabase import create_client, Client
 import uuid
 from streamlit_js_eval import streamlit_js_eval
 
+
+#------------------------------
+# PAGE CONFIG
+# -----------------------------
+
+st.set_page_config(
+    page_title="TalkSpace",
+    page_icon="🌿",
+    layout="wide"
+)
+
+
 # -----------------------------
 # USER IDENTIFICATION (FIXED ORDER)
 # -----------------------------
@@ -20,7 +32,7 @@ stored_user = streamlit_js_eval(
 if "user_id" not in st.session_state:
 
     if stored_user:
-        st.session_state.user_id = stored_user
+        st.session_state.user_id = stored_user[0]
 
     else:
         new_id = str(uuid.uuid4())
@@ -34,31 +46,8 @@ if "user_id" not in st.session_state:
 # -----------------------------
 # CONVERSATION INITIALIZATION (FIX)
 # -----------------------------
-stored_conv = streamlit_js_eval(
-    js_expressions="localStorage.getItem('last_conversation_id')",
-    key="get_conv"
-)
-
 if "conversation_id" not in st.session_state:
-
-    query_params = st.query_params
-
-    if "conversation_id" in query_params and query_params["conversation_id"]:
-        st.session_state.conversation_id = query_params["conversation_id"]
-
-    elif stored_conv:
-        st.session_state.conversation_id = stored_conv[0]   # ✅ FIXED
-
-    else:
-        new_conv = str(uuid.uuid4())
-        st.session_state.conversation_id = new_conv
-        st.query_params["conversation_id"] = new_conv
-
-    # ✅ SAVE AFTER SETTING
-    streamlit_js_eval(
-        js_expressions=f"localStorage.setItem('last_conversation_id', '{st.session_state.conversation_id}')",
-        key="set_conv"
-    )
+    st.session_state.conversation_id = str(uuid.uuid4())
 
 #--------------------------------
 # supabase setup
@@ -72,15 +61,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 load_dotenv()
 
 
-#------------------------------
-# PAGE CONFIG
-# -----------------------------
-
-st.set_page_config(
-    page_title="TalkSpace",
-    page_icon="🌿",
-    layout="wide"
-)
 
 # -----------------------------
 # UI STYLE
@@ -265,13 +245,15 @@ button[kind="secondary"]:hover {
 # HEADER
 # -----------------------------
 
-st.markdown("""
-<div style="text-align:center; margin-bottom:20px;">
-    <h1 style="margin-bottom:5px;">🌿 TalkSpace</h1>
-    <p style="color:#6b7280;">Nira is here… just for you</p>
-</div>
-""", unsafe_allow_html=True)
+if "header_done" not in st.session_state:
+    st.session_state.header_done = True
 
+    st.markdown("""
+    <div style="text-align:center; margin-bottom:20px;">
+        <h1 style="margin-bottom:5px;">🌿 TalkSpace</h1>
+        <p style="color:#6b7280;">Nira is here… just for you</p>
+    </div>
+    """, unsafe_allow_html=True)
 # -----------------------------
 # GET CONVERSATIONS
 # -----------------------------
@@ -280,7 +262,7 @@ def get_conversations():
     response = supabase.table("messages") \
         .select("conversation_id, content, role, created_at") \
         .eq("user_id", st.session_state.user_id) \
-        .order("created_at") \
+        .order("created_at", desc=True) \
         .execute()
 
     data = response.data if response.data else []
@@ -294,20 +276,23 @@ def get_conversations():
         if cid not in conversations and msg["role"] == "user":
             text = msg["content"].lower()
 
-            # skip boring greetings
             if any(greet in text for greet in greetings) and len(text) < 10:
                 continue
 
-            conversations[cid] = msg["content"][:40]
+            title = msg["content"].strip()
+            if len(title) < 5:
+                continue
 
-    return conversations
+            conversations[cid] = title[:40]
+
+    return conversations   # ✅ OUTSIDE LOOP
 
 
 # -----------------------------
 # SESSION STATE
 # -----------------------------
 
-if "messages" not in st.session_state:
+if "messages" not in st.session_state or st.session_state.messages == []:
     response = supabase.table("messages") \
         .select("*") \
         .eq("user_id", st.session_state.user_id) \
