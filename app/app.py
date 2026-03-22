@@ -21,23 +21,15 @@ load_dotenv()
 # -----------------------------
 # USER IDENTIFICATION
 # -----------------------------
-query_params = st.query_params
+if "user_id" not in st.session_state:
+    query_params = st.query_params
 
-if "user_id" in query_params:
-    st.session_state.user_id = query_params["user_id"]
-else:
-    new_id = str(uuid.uuid4())
-    st.session_state.user_id = new_id
-    st.query_params["user_id"] = new_id
-
-
-if "conversation_id" in st.query_params:
-    st.session_state.conversation_id = st.query_params["conversation_id"]
-else:
-    new_conv = str(uuid.uuid4())
-    st.session_state.conversation_id = new_conv
-    st.query_params["conversation_id"] = new_conv
-
+    if "user_id" in query_params:
+        st.session_state.user_id = query_params["user_id"]
+    else:
+        new_id = str(uuid.uuid4())
+        st.session_state.user_id = new_id
+        st.query_params["user_id"] = new_id
 
 # -----------------------------
 # PAGE CONFIG
@@ -311,11 +303,13 @@ if "emotion_history" not in st.session_state:
 # -----------------------------
 # CRISIS DETECTION
 # -----------------------------
-
-crisis_words = [
+def is_crisis(text):
+    text = text.lower()
+    crisis_words = [
 "i want to die",
 "kill myself",
 "suicide",
+"suicidal",
 "end my life",
 "i can't live anymore",
 "i can't do it anymore",
@@ -339,8 +333,8 @@ crisis_words = [
     "i will kill",
     "kill this time",
     "i will surely kill",
-    "i feel like dying"
-]
+    "i feel like dying"]
+    return any(p in text for p in crisis_words)
 
 # -----------------------------
 # EMOTION KEYWORDS
@@ -370,7 +364,7 @@ def detect_emotion(text):
     text = text.lower()
 
     # 🚨 SMART CRISIS DETECTION
-    crisis_keywords = ["kill", "die", "suicide", "end my life", "don't want to live"]
+    crisis_keywords = ["kill", "die", "suicide", "end my life", "don't want to live","suicidal"]
 
     if any(word in text for word in crisis_keywords):
         return "crisis"
@@ -561,6 +555,14 @@ When the user speaks casually, angrily, or uses strong language:
 - do NOT analyze their emotion formally
 - do NOT say "it sounds like you're feeling..."
 - react naturally, even slightly casual if appropriate
+
+CRISIS MODE:
+If the user expresses suicidal thoughts:
+- respond with serious, grounded empathy
+- avoid casual tone completely
+- avoid light expressions like "hmm", "yeah"
+- do NOT act playful or relaxed
+- prioritize safety and presence
 
 Examples:
 - "hey… that was strong 😅 what happened?"
@@ -943,15 +945,16 @@ if user_input:
         st.session_state.intensity = 0
 
     # CRISIS RESPONSE (HIGHEST PRIORITY)
-    if emotion == "crisis":
+    if is_crisis(clean_input):
         st.session_state.intensity = 3
     
         crisis_responses = [
-    "hey… that sounds really heavy. you don’t have to sit with it alone right now.",
-    "i’m really glad you said that out loud… that kind of feeling can be overwhelming.",
-    "that sounds like a lot to carry… are you safe right now?",
-    "hmm… that’s really intense. i’m here with you.",
-    "i’m really sorry it feels this way… you don’t have to handle it alone."
+    "hey… I’m really sorry it feels this heavy. you don’t have to go through it alone.",
+"that sounds really overwhelming… I’m really glad you told me.",
+"I’m here with you… this kind of feeling can get really intense.",
+"that’s a lot to carry… you matter more than this moment feels like.",
+"You deserve support, and there are people who care about you.",
+"are you somewhere safe right now? I’m here with you."
 ]
         response = random.choice(crisis_responses)
     # NORMAL EMOTION FLOW
@@ -980,7 +983,7 @@ if user_input:
             response = random.choice([
         "that sounds really heavy… I’m here with you.",
         "yeah… that kind of thing can really hurt. I’m here.",
-        "that’s a lot to carry… you don’t have to hold it alone here."
+        "that’s a lot to carry… you don’t have to hold it alone here.",
     "hmm… I’m here with you.",
     "yeah… I’m listening.",
     "I’m here… take your time.",
