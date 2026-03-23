@@ -29,7 +29,7 @@ https://talkspace-ai.streamlit.app/
 ## 🎥 Demo
 
 <p align="center">
-  <img src="screenshots/demo-video-gif.gif" width="90%" />
+  <img src="screenshots/demo-video-gif.gif" width="100%" />
 </p>
 
 ---
