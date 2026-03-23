@@ -7,7 +7,7 @@ import os
 import re
 from supabase import create_client, Client
 import uuid
-from streamlit_js_eval import streamlit_js_eval
+
 
 
 #------------------------------
