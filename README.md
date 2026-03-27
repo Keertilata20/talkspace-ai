@@ -137,7 +137,6 @@ User Input → Emotion Detection → Response Strategy → LLM Generation → Me
 
 ## ⚙️ Technical Highlights
 
-* Designed a **hybrid architecture** combining ML classification with rule-based conversational control
 * Built a **real-time emotion tracking system** that synchronizes UI and conversation state
 * Implemented **state-driven UI rendering** using Streamlit session management
 * Developed a **priority-based response system** (crisis overrides normal flow)
